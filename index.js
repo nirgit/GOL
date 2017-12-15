@@ -1,40 +1,120 @@
-const start = () => {
+const DELAY_BETWEEN_GENERATIONS_IN_MS = 500;
+const WHITE_SQUARE = '\u25A1'; 
+const LIFE_SYMBOL = WHITE_SQUARE;
+const TOTAL_GENERATIONS = -1; // -1 for infinity
+
+const start = (dimension, totalGenerationsToRun) => {
     console.log('========== Game of Life simulation ==========');
 
-    const dimension = 10;
-    const board = createBoard(dimension);
-    const TOTAL_GENERATIONS = 5;
-    let generations = TOTAL_GENERATIONS;
+    let board = createBoard(dimension);    
+    initializeBoardLiveCells(board);
+
+    let generations = totalGenerationsToRun;
     
-    const play = () => {
-        if (generations > 0) {
-            drawBoard(TOTAL_GENERATIONS - generations, board);
-            updateBoard(board);
-            generations--;
-            setTimeout(play, 1000);
+    const playGameOfLife = () => {
+        if (generations >= 0) {
+            drawBoard(totalGenerationsToRun - generations, board);
+            board = updateBoard(board);
+            if (generations >= 0) {
+                generations--;
+            }
+            setTimeout(playGameOfLife, DELAY_BETWEEN_GENERATIONS_IN_MS);
         }
     };
-    play();
+    playGameOfLife();
 };
 
-const updateBoard = board => {
-    
+const initializeBoardLiveCells = board => {
+    board[2][1] = LIFE_SYMBOL;
+    board[2][2] = LIFE_SYMBOL;
+    board[2][3] = LIFE_SYMBOL;
+    board[4][2] = LIFE_SYMBOL;
 }
 
-const drawBoard = (generation, board) => {
-    console.log('\033[2J');
-    console.log('Generation ' + generation);
-    for (let i=0; i < board.length; i++) {
-        console.log(board[i].join(' ') + '\n');
+const updateBoard = board => {
+    const nextGenBoard = cloneBoard(board);
+    board.forEach((row, rowIndex) => {
+        row.forEach((cell, colIndex) => {
+            updateCellValue(board, nextGenBoard, rowIndex, colIndex);
+        });
+    });
+    return nextGenBoard;
+}
+
+const cloneBoard = board => {
+    const clone = [];
+    board.forEach(row => {
+        clone.push(row.slice());
+    });
+    return clone;
+}
+
+const updateCellValue = (board, nextGenBoard, row, col) => {
+    const numberOfLiveNeighbours = getNumberOfLiveNeighbourCells(board, row, col);
+    if (isAlive(board[row][col])) {
+        switch (numberOfLiveNeighbours) {
+            case 0:
+            case 1:
+                nextGenBoard[row][col] = '';
+                break;
+            case 2:
+            case 3:
+                break;
+            default:
+                nextGenBoard[row][col] = '';
+                break;
+        }
+    } else {
+        if (numberOfLiveNeighbours === 3) {
+            nextGenBoard[row][col] = LIFE_SYMBOL;
+        }
     }
 }
 
+const getNumberOfLiveNeighbourCells = (board, row, col) => {
+    const neighbourIndexes = getCellNeighbours(row, col);
+    return neighbourIndexes
+        .filter(neighbour => neighbour[0] !== row || neighbour[1] !== col)
+        .reduce((totalNeighbours, neighbour) => {
+            const [nRow, nCol] = neighbour;
+            if (isCellInsideBoard(board, nRow, nCol)) {
+                if (isAlive(board[nRow][nCol])) {
+                    return totalNeighbours + 1;
+                }
+            }
+            return totalNeighbours;
+        }, 0);
+}
+
+const isCellInsideBoard = (board, row, col) => row >= 0 && row < board.length && col >=0 && col < board.length;
+
+const getCellNeighbours = (row, col) => {
+    const neighbourIndexes = [];
+    [row - 1, row, row + 1].forEach(rowIndex => {
+        neighbourIndexes.push([rowIndex, col - 1]);
+        neighbourIndexes.push([rowIndex, col]);
+        neighbourIndexes.push([rowIndex, col + 1]);
+    });
+    return neighbourIndexes;
+}
+
+const isAlive = val => val === LIFE_SYMBOL;
+
+const drawBoard = (generation, board) => {
+    clearScreen();
+    console.log(`===== Generation ${generation} =====`);
+    board.forEach(drawRow);
+}
+
+const clearScreen = () => console.log('\033[2J');
+const drawRow = row => console.log(row.join(' ') + '\n');
+
 const createBoard = (dimension) => {
     const board = [];
-    for (var i=0; i < dimension; i++) {
-        board.push(Array(dimension));
+    for (let i = 0; i < dimension; i++) {
+        board.push(Array(dimension).fill(''));
     }
     return board;
 }
 
-start();
+start(10, 10);
