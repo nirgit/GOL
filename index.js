@@ -9,20 +9,22 @@ const start = (dimension, totalGenerationsToRun) => {
     let board = createBoard(dimension);    
     initializeBoardLiveCells(board);
 
-    let generations = totalGenerationsToRun;
+    let generations = isInfiniteGenerations(totalGenerationsToRun) ? 0 : totalGenerationsToRun;
     
     const playGameOfLife = () => {
-        if (generations >= 0) {
-            drawBoard(totalGenerationsToRun - generations, board);
+        if (isInfiniteGenerations(totalGenerationsToRun) || generations > 0) {
+            let generationsElapsed = isInfiniteGenerations(totalGenerationsToRun) ? generations : totalGenerationsToRun - generations;
+            drawBoard(generationsElapsed, board);
             board = updateBoard(board);
-            if (generations >= 0) {
-                generations--;
-            }
+            generations = isInfiniteGenerations(totalGenerationsToRun) ? generations + 1 : generations - 1;
             setTimeout(playGameOfLife, DELAY_BETWEEN_GENERATIONS_IN_MS);
         }
     };
+
     playGameOfLife();
 };
+
+const isInfiniteGenerations = totalGenerationsToRun => totalGenerationsToRun === -1;
 
 const initializeBoardLiveCells = board => {
     board[2][1] = LIFE_SYMBOL;
@@ -117,4 +119,4 @@ const createBoard = (dimension) => {
     return board;
 }
 
-start(10, 10);
+start(10, TOTAL_GENERATIONS);
